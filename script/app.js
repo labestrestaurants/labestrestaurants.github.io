@@ -1,1 +1,68 @@
-YUI().use("base","json","labr-view-container","autocomplete","autocomplete-highlighters","dd-constrain","dd-proxy","dd-drop",function(f){f.namespace("LAbr");var b={CategoriesViews:{}},a=[{name:"American",tittle:"Americans Restaurants",dataRetrieve:{location:"los angeles, ca",query:"burger",count:2}},{name:"Japanese",tittle:"Japanese Restaurants",dataRetrieve:{location:"los angeles, ca",query:"japanese",count:2}},{name:"Korean",tittle:"Korean Restaurants",dataRetrieve:{location:"los angeles, ca",query:"korean",count:2}}],d=new f.AutoComplete({inputNode:"#filter",render:true});b.init=function(h){var g=b.CategoriesViews;f.each(a,function(i){g[i.name]=new f.LAbr.Container(i).render(".panels-container")});b.reorderPanels()};b.filterItems=function(h){var g=b.CategoriesViews;f.each(g,function(i){i.filterItems(h)})};b.reorderPanels=function(){var g=f.Node.all(".panel");g.each(function(j,i){var h=new f.DD.Drag({node:j,target:{padding:"0 0 0 20"}}).plug(f.Plugin.DDProxy,{moveOnEnd:false}).plug(f.Plugin.DDConstrained,{constrain2node:".panels-container"}).addHandle(".drag-icon")})};d.on("query",function(g){b.filterItems(g.query)});d.on("clear",function(g){b.filterItems("")});f.DD.DDM.on("drag:start",function(h){var g=h.target;g.get("node").setStyle("opacity",".25");g.get("dragNode").set("innerHTML",g.get("node").get("innerHTML"));g.get("dragNode").setStyles({opacity:".5",borderColor:g.get("node").getStyle("borderColor"),backgroundColor:g.get("node").getStyle("backgroundColor")})});f.DD.DDM.on("drag:end",function(h){var g=h.target;g.get("node").setStyles({visibility:"",opacity:"1"})});f.DD.DDM.on("drop:over",function(i){var h=i.drag.get("node"),g=i.drop.get("node");if(g.hasClass("panel")){if(!e){g=g.get("nextSibling")}i.drop.get("node").get("parentNode").insertBefore(h,g);i.drop.sizeShim()}});f.DD.DDM.on("drag:drophit",function(i){var g=i.drop.get("node"),h=i.drag.get("node");if(!g.hasClass("panel")){if(!g.contains(h)){g.appendChild(h)}}});var e=false,c=0;b.init()});
+YUI().use('base', 'json', 'labr-view-container', 'autocomplete', 'autocomplete-highlighters', 'labr-view-ddbehavior', 'labr-view-itemdetails', 'labr-controller-app', function (Y) {
+Y.namespace('LAbr');
+
+	//Basic App Configurations
+	var App = {
+		CategoriesViews: {},
+		Maps: {
+			marker: {},
+			apiLoad: 0
+		},
+		AppController: {}
+	},
+		categories = APP_config.categories,
+		ac = new Y.AutoComplete({
+			inputNode: '#filter',
+			render: true
+		});
+
+	Y.LAbr.App = App;
+	/**
+	 * Description
+	 * @method init
+	 * @param {} config
+	 * @return 
+	 */
+	App.init = function (config) {
+		App.AppController = new Y.LAbr.AppController();
+		App.AppController.showRestaurantCategoriesAction(categories);
+
+		//Listener view events and execute controllers actions
+		Y.on('labr-view-item:openitem', App.AppController.restaurantShowDetailAction, App.AppController);
+		Y.on('labr-view-itemdetails:closeitem', App.AppController.hideRestaurantDetailAction, App.AppController);
+	};
+
+	/**
+	 * Description
+	 * @method mapsApiAsyncLoading
+	 * @return 
+	 */
+	App.mapsApiAsyncLoading = function () {
+		var script = document.createElement('script');
+		script.type = 'text/javascript';
+		script.src = 'https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&' + 'callback=initializeGoogleApi';
+		document.body.appendChild(script);
+	};
+
+	/**
+	 * Description
+	 * @method initializeGoogleApi
+	 * @return 
+	 */
+	window.initializeGoogleApi = function () {
+		console.log('Google Maps Ready');
+		App.Maps.apiLoad = 1;
+	}
+
+	//Filter Listeners
+	ac.on('query', function (e) {
+		App.AppController.filterItems(e.query);
+	});
+
+	ac.on('clear', function (e) {
+		App.AppController.filterItems('');
+	});
+
+	App.mapsApiAsyncLoading();
+	App.init();
+});
